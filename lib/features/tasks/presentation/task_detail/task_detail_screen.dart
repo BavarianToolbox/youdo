@@ -103,7 +103,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(tasksRepositoryProvider);
-      final userId = ref.read(authStateProvider).valueOrNull?.uid ?? '';
+      final userId = ref.read(authStateProvider).valueOrNull?.id ?? '';
 
       final reward = double.tryParse(_rewardController.text) ?? 0.0;
       final penalty = double.tryParse(_penaltyController.text) ?? 0.0;

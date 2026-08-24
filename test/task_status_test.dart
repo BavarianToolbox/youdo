@@ -5,12 +5,12 @@ void main() {
   group('TaskStatus', () {
     test('round-trips persisted values', () {
       for (final status in TaskStatus.values) {
-        expect(TaskStatus.fromFirestoreValue(status.firestoreValue), status);
+        expect(TaskStatus.fromDatabaseValue(status.databaseValue), status);
       }
     });
 
     test('falls back to pending for unknown persisted values', () {
-      expect(TaskStatus.fromFirestoreValue('unknown'), TaskStatus.pending);
+      expect(TaskStatus.fromDatabaseValue('unknown'), TaskStatus.pending);
     });
 
     test('exposes status categories', () {

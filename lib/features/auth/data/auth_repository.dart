@@ -1,33 +1,29 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../domain/app_user.dart';
 
 class AuthRepository {
-  AuthRepository({
-    required FirebaseAuth firebaseAuth,
-    required FirebaseFirestore firestore,
-    required GoogleSignIn googleSignIn,
-  }) : _auth = firebaseAuth,
-       _firestore = firestore,
-       _googleSignIn = googleSignIn;
+  AuthRepository(this._client);
 
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
-  final GoogleSignIn _googleSignIn;
+  final SupabaseClient _client;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges =>
+      _client.auth.onAuthStateChange.map((event) => event.session?.user);
 
   Future<AppUser> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    final credential = await _auth.signInWithEmailAndPassword(
+    final response = await _client.auth.signInWithPassword(
       email: email,
       password: password,
     );
-    return _fetchOrCreateUser(credential.user!);
+    final user = response.user;
+    if (user == null) {
+      throw const AuthException('Sign in did not return a user');
+    }
+    return _fetchProfile(user.id);
   }
 
   Future<AppUser> signUpWithEmail({
@@ -35,73 +31,51 @@ class AuthRepository {
     required String password,
     required String displayName,
   }) async {
-    final credential = await _auth.createUserWithEmailAndPassword(
+    final response = await _client.auth.signUp(
       email: email,
       password: password,
+      data: {'display_name': displayName},
     );
-    await credential.user!.updateDisplayName(displayName);
-    return _fetchOrCreateUser(credential.user!, displayName: displayName);
+    final user = response.user;
+    if (user == null) {
+      throw const AuthException('Sign up did not return a user');
+    }
+    return _fetchProfile(user.id);
   }
 
-  Future<AppUser> signInWithGoogle() async {
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) throw Exception('Google sign-in cancelled');
-
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
+  Future<void> signInWithGoogle() async {
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: 'com.youdo.youdo://login-callback',
     );
-    final userCredential = await _auth.signInWithCredential(credential);
-    return _fetchOrCreateUser(userCredential.user!);
   }
 
-  Future<void> signOut() async {
-    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
-  }
+  Future<void> signOut() => _client.auth.signOut();
 
   Stream<AppUser?> watchCurrentUser(String uid) {
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map(
-          (snap) =>
-              snap.exists ? AppUser.fromFirestore(snap.data()!, uid) : null,
-        );
+    return _client
+        .from('profiles')
+        .stream(primaryKey: ['id'])
+        .eq('id', uid)
+        .map((rows) => rows.isEmpty ? null : AppUser.fromJson(rows.single));
   }
 
   Future<void> updateUserField(String uid, Map<String, dynamic> fields) async {
-    await _firestore.collection('users').doc(uid).update(fields);
+    await _client.from('profiles').update(fields).eq('id', uid);
   }
 
-  Future<AppUser> _fetchOrCreateUser(User user, {String? displayName}) async {
-    final docRef = _firestore.collection('users').doc(user.uid);
-    final doc = await docRef.get();
-
-    if (!doc.exists) {
-      final newUser = AppUser(
-        uid: user.uid,
-        email: user.email ?? '',
-        displayName: displayName ?? user.displayName ?? '',
-      );
-      await docRef.set({
-        ...newUser.toFirestore(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      return newUser;
-    }
-
-    return AppUser.fromFirestore(doc.data()!, user.uid);
+  Future<AppUser> _fetchProfile(String uid) async {
+    final data = await _client.from('profiles').select().eq('id', uid).single();
+    return AppUser.fromJson(data);
   }
 }
 
+final supabaseClientProvider = Provider<SupabaseClient>((ref) {
+  return Supabase.instance.client;
+});
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(
-    firebaseAuth: FirebaseAuth.instance,
-    firestore: FirebaseFirestore.instance,
-    googleSignIn: GoogleSignIn(),
-  );
+  return AuthRepository(ref.watch(supabaseClientProvider));
 });
 
 final authStateProvider = StreamProvider<User?>((ref) {
@@ -113,9 +87,9 @@ final currentUserProvider = StreamProvider<AppUser?>((ref) {
   return authState.when(
     data: (user) {
       if (user == null) return Stream.value(null);
-      return ref.watch(authRepositoryProvider).watchCurrentUser(user.uid);
+      return ref.watch(authRepositoryProvider).watchCurrentUser(user.id);
     },
     loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
+    error: (_, _) => Stream.value(null),
   );
 });

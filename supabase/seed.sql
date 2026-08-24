@@ -1,0 +1,2 @@
+-- Intentionally empty. Create local users through Supabase Auth so profile
+-- records are produced by the same trigger used in production.

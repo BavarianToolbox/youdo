@@ -58,7 +58,7 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
 
   Future<void> _processCompletion() async {
     try {
-      // Mark task complete in Firestore
+      // Persist completion before processing any configured stake.
       await ref
           .read(tasksRepositoryProvider)
           .markComplete(widget.task.id, isOnTime: widget.isOnTime);

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum TransactionType { reward, penalty }
@@ -20,7 +19,7 @@ class TransactionModel extends Equatable {
 
   final String id;
   final String userId;
-  final String taskId;
+  final String? taskId;
   final String taskTitle;
   final TransactionType type;
   final double amount;
@@ -28,13 +27,12 @@ class TransactionModel extends Equatable {
   final DateTime createdAt;
   final String? stripeIntentId;
 
-  factory TransactionModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory TransactionModel.fromJson(Map<String, dynamic> data) {
     return TransactionModel(
-      id: doc.id,
-      userId: data['userId'] as String,
-      taskId: data['taskId'] as String,
-      taskTitle: data['taskTitle'] as String? ?? '',
+      id: data['id'] as String,
+      userId: data['user_id'] as String,
+      taskId: data['task_id'] as String?,
+      taskTitle: data['task_title'] as String? ?? '',
       type: data['type'] == 'reward'
           ? TransactionType.reward
           : TransactionType.penalty,
@@ -44,8 +42,8 @@ class TransactionModel extends Equatable {
         'failed' => TransactionStatus.failed,
         _ => TransactionStatus.pending,
       },
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      stripeIntentId: data['stripeIntentId'] as String?,
+      createdAt: DateTime.parse(data['created_at'] as String),
+      stripeIntentId: data['stripe_intent_id'] as String?,
     );
   }
 
