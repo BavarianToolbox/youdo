@@ -1,0 +1,68 @@
+name: youdo
+description: "You-Do: A financially-incentivized to-do list app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  cloud_functions: ^5.1.3
+  firebase_messaging: ^15.1.3
+  google_sign_in: ^6.2.1
+
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.3.0
+
+  # Payments
+  flutter_stripe: ^11.1.0
+
+  # UI / Animations
+  lottie: ^3.1.2
+  confetti: ^0.7.0
+  animate_do: ^3.3.4
+  google_fonts: ^6.2.1
+
+  # Audio + Haptics
+  audioplayers: ^6.1.0
+
+  # Notifications
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+
+  # Utilities
+  intl: ^0.19.0
+  equatable: ^2.0.5
+  uuid: ^4.4.0
+  shared_preferences: ^2.3.2
+  gap: ^3.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  riverpod_generator: ^2.4.3
+  build_runner: ^2.4.12
+  flutter_lints: ^4.0.0
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/sounds/
+    - assets/animations/
