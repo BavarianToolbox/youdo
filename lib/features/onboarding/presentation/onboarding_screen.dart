@@ -107,10 +107,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    final uid = ref.read(authStateProvider).valueOrNull?.uid;
+    final uid = ref.read(authStateProvider).valueOrNull?.id;
     if (uid != null) {
       await ref.read(authRepositoryProvider).updateUserField(uid, {
-        'onboardingComplete': true,
+        'onboarding_complete': true,
       });
     }
     final prefs = await SharedPreferences.getInstance();

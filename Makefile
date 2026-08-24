@@ -1,8 +1,21 @@
-.PHONY: setup format format-check lint typecheck test check flutter-build functions-build build
+.PHONY: setup local-start local-stop db-reset db-test format format-check lint typecheck test check flutter-build functions-build build
 
 setup:
+	npm ci
 	flutter pub get
 	npm --prefix functions ci
+
+local-start:
+	npx supabase start
+
+local-stop:
+	npx supabase stop
+
+db-reset:
+	npx supabase db reset
+
+db-test:
+	npx supabase test db
 
 format:
 	dart format lib test

@@ -14,7 +14,6 @@ class AppUser extends Equatable {
     this.hapticsEnabled = true,
     this.totalEarned = 0.0,
     this.totalLost = 0.0,
-    this.fcmToken,
   });
 
   final String uid;
@@ -29,38 +28,35 @@ class AppUser extends Equatable {
   final bool hapticsEnabled;
   final double totalEarned;
   final double totalLost;
-  final String? fcmToken;
 
-  factory AppUser.fromFirestore(Map<String, dynamic> data, String uid) {
+  factory AppUser.fromJson(Map<String, dynamic> data) {
     return AppUser(
-      uid: uid,
+      uid: data['id'] as String,
       email: data['email'] as String? ?? '',
-      displayName: data['displayName'] as String? ?? '',
-      stripeCustomerId: data['stripeCustomerId'] as String?,
-      stripePaymentMethodId: data['stripePaymentMethodId'] as String?,
-      hasPaymentMethod: data['hasPaymentMethod'] as bool? ?? false,
-      onboardingComplete: data['onboardingComplete'] as bool? ?? false,
-      notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
-      soundEnabled: data['soundEnabled'] as bool? ?? true,
-      hapticsEnabled: data['hapticsEnabled'] as bool? ?? true,
-      totalEarned: (data['totalEarned'] as num?)?.toDouble() ?? 0.0,
-      totalLost: (data['totalLost'] as num?)?.toDouble() ?? 0.0,
-      fcmToken: data['fcmToken'] as String?,
+      displayName: data['display_name'] as String? ?? '',
+      stripeCustomerId: data['stripe_customer_id'] as String?,
+      stripePaymentMethodId: data['stripe_payment_method_id'] as String?,
+      hasPaymentMethod: data['has_payment_method'] as bool? ?? false,
+      onboardingComplete: data['onboarding_complete'] as bool? ?? false,
+      notificationsEnabled: data['notifications_enabled'] as bool? ?? true,
+      soundEnabled: data['sound_enabled'] as bool? ?? true,
+      hapticsEnabled: data['haptics_enabled'] as bool? ?? true,
+      totalEarned: (data['total_earned'] as num?)?.toDouble() ?? 0.0,
+      totalLost: (data['total_lost'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
       'email': email,
-      'displayName': displayName,
-      'hasPaymentMethod': hasPaymentMethod,
-      'onboardingComplete': onboardingComplete,
-      'notificationsEnabled': notificationsEnabled,
-      'soundEnabled': soundEnabled,
-      'hapticsEnabled': hapticsEnabled,
-      'totalEarned': totalEarned,
-      'totalLost': totalLost,
-      if (fcmToken != null) 'fcmToken': fcmToken,
+      'display_name': displayName,
+      'has_payment_method': hasPaymentMethod,
+      'onboarding_complete': onboardingComplete,
+      'notifications_enabled': notificationsEnabled,
+      'sound_enabled': soundEnabled,
+      'haptics_enabled': hapticsEnabled,
+      'total_earned': totalEarned,
+      'total_lost': totalLost,
     };
   }
 
@@ -75,7 +71,6 @@ class AppUser extends Equatable {
     bool? hapticsEnabled,
     double? totalEarned,
     double? totalLost,
-    String? fcmToken,
   }) {
     return AppUser(
       uid: uid,
@@ -91,7 +86,6 @@ class AppUser extends Equatable {
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       totalEarned: totalEarned ?? this.totalEarned,
       totalLost: totalLost ?? this.totalLost,
-      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 

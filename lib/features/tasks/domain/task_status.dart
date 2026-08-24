@@ -4,7 +4,7 @@ enum TaskStatus {
   completedLate,
   missed;
 
-  String get firestoreValue {
+  String get databaseValue {
     return switch (this) {
       TaskStatus.pending => 'pending',
       TaskStatus.completedOnTime => 'completed_on_time',
@@ -13,7 +13,7 @@ enum TaskStatus {
     };
   }
 
-  static TaskStatus fromFirestoreValue(String value) {
+  static TaskStatus fromDatabaseValue(String value) {
     return switch (value) {
       'completed_on_time' => TaskStatus.completedOnTime,
       'completed_late' => TaskStatus.completedLate,

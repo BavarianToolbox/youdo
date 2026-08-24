@@ -1,15 +1,17 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../auth/data/auth_repository.dart';
 
 class StripeRepository {
-  StripeRepository(this._functions);
+  StripeRepository(this._client);
 
-  final FirebaseFunctions _functions;
+  final SupabaseClient _client;
 
   Future<String> createSetupIntent() async {
-    final result = await _functions.httpsCallable('createSetupIntent').call();
-    return result.data['clientSecret'] as String;
+    final result = await _client.functions.invoke('create-setup-intent');
+    return (result.data as Map<String, dynamic>)['clientSecret'] as String;
   }
 
   Future<void> confirmSetupIntent(String clientSecret) async {
@@ -22,9 +24,10 @@ class StripeRepository {
   }
 
   Future<Map<String, dynamic>> savePaymentMethod(String paymentMethodId) async {
-    final result = await _functions.httpsCallable('savePaymentMethod').call({
-      'paymentMethodId': paymentMethodId,
-    });
+    final result = await _client.functions.invoke(
+      'save-payment-method',
+      body: {'paymentMethodId': paymentMethodId},
+    );
     return Map<String, dynamic>.from(result.data as Map);
   }
 
@@ -32,13 +35,14 @@ class StripeRepository {
     required String taskId,
     required bool isOnTime,
   }) async {
-    final result = await _functions.httpsCallable('processTaskCompletion').call(
-      {'taskId': taskId, 'isOnTime': isOnTime},
+    final result = await _client.functions.invoke(
+      'process-task-completion',
+      body: {'taskId': taskId, 'isOnTime': isOnTime},
     );
     return Map<String, dynamic>.from(result.data as Map);
   }
 }
 
 final stripeRepositoryProvider = Provider<StripeRepository>((ref) {
-  return StripeRepository(FirebaseFunctions.instance);
+  return StripeRepository(ref.watch(supabaseClientProvider));
 });

@@ -63,19 +63,19 @@ class SettingsScreen extends ConsumerWidget {
             label: AppStrings.notifications,
             value: user?.notificationsEnabled ?? true,
             onChanged: (v) =>
-                _updatePref(ref, user?.uid, 'notificationsEnabled', v),
+                _updatePref(ref, user?.uid, 'notifications_enabled', v),
           ),
           _ToggleTile(
             icon: Icons.volume_up_outlined,
             label: AppStrings.sound,
             value: user?.soundEnabled ?? true,
-            onChanged: (v) => _updatePref(ref, user?.uid, 'soundEnabled', v),
+            onChanged: (v) => _updatePref(ref, user?.uid, 'sound_enabled', v),
           ),
           _ToggleTile(
             icon: Icons.vibration_rounded,
             label: AppStrings.haptics,
             value: user?.hapticsEnabled ?? true,
-            onChanged: (v) => _updatePref(ref, user?.uid, 'hapticsEnabled', v),
+            onChanged: (v) => _updatePref(ref, user?.uid, 'haptics_enabled', v),
           ),
           const Divider(height: 1),
           _SectionHeader('About'),

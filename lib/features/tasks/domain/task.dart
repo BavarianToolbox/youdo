@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 import 'task_status.dart';
@@ -59,44 +58,45 @@ class Task extends Equatable {
     );
   }
 
-  factory Task.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Task.fromJson(Map<String, dynamic> data) {
     return Task(
-      id: doc.id,
-      userId: data['userId'] as String,
+      id: data['id'] as String,
+      userId: data['user_id'] as String,
       title: data['title'] as String,
       description: data['description'] as String?,
-      dueDate: (data['dueDate'] as Timestamp).toDate(),
-      rewardAmount: (data['rewardAmount'] as num?)?.toDouble() ?? 0.0,
-      penaltyAmount: (data['penaltyAmount'] as num?)?.toDouble() ?? 0.0,
-      status: TaskStatus.fromFirestoreValue(
+      dueDate: DateTime.parse(data['due_date'] as String),
+      rewardAmount: (data['reward_amount'] as num?)?.toDouble() ?? 0.0,
+      penaltyAmount: (data['penalty_amount'] as num?)?.toDouble() ?? 0.0,
+      status: TaskStatus.fromDatabaseValue(
         data['status'] as String? ?? 'pending',
       ),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      completedAt: data['completedAt'] != null
-          ? (data['completedAt'] as Timestamp).toDate()
+      createdAt: DateTime.parse(data['created_at'] as String),
+      completedAt: data['completed_at'] != null
+          ? DateTime.parse(data['completed_at'] as String)
           : null,
-      deadlineProcessed: data['deadlineProcessed'] as bool? ?? false,
-      notificationScheduled: data['notificationScheduled'] as bool? ?? false,
-      stripePaymentIntentId: data['stripePaymentIntentId'] as String?,
+      deadlineProcessed: data['deadline_processed'] as bool? ?? false,
+      notificationScheduled: data['notification_scheduled'] as bool? ?? false,
+      stripePaymentIntentId: data['stripe_payment_intent_id'] as String?,
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
-      'userId': userId,
+      'id': id,
+      'user_id': userId,
       'title': title,
       if (description != null) 'description': description,
-      'dueDate': Timestamp.fromDate(dueDate),
-      'rewardAmount': rewardAmount,
-      'penaltyAmount': penaltyAmount,
-      'status': status.firestoreValue,
-      'createdAt': Timestamp.fromDate(createdAt),
-      if (completedAt != null) 'completedAt': Timestamp.fromDate(completedAt!),
-      'deadlineProcessed': deadlineProcessed,
-      'notificationScheduled': notificationScheduled,
+      'due_date': dueDate.toUtc().toIso8601String(),
+      'reward_amount': rewardAmount,
+      'penalty_amount': penaltyAmount,
+      'status': status.databaseValue,
+      'created_at': createdAt.toUtc().toIso8601String(),
+      if (completedAt != null)
+        'completed_at': completedAt!.toUtc().toIso8601String(),
+      'deadline_processed': deadlineProcessed,
+      'notification_scheduled': notificationScheduled,
       if (stripePaymentIntentId != null)
-        'stripePaymentIntentId': stripePaymentIntentId,
+        'stripe_payment_intent_id': stripePaymentIntentId,
     };
   }
 

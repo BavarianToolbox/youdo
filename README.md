@@ -1,13 +1,15 @@
 # You-Do
 
 You-Do is a Flutter mobile application for financially incentivized task
-management. The client is in `lib/`; the current Firebase Cloud Functions
-backend is in `functions/`.
+management. The Flutter client is in `lib/`; the local Supabase project,
+PostgreSQL migrations, and database tests are in `supabase/`. The Firebase
+Cloud Functions in `functions/` are legacy code being replaced.
 
 ## Prerequisites
 
 - Flutter 3.38.5 (Dart 3.10.4), recorded in `.fvmrc`
 - Node.js 20, recorded in `.nvmrc`
+- A Docker-compatible engine for the local Supabase stack
 - Android SDK and Java 17 only when building the Android application
 
 FVM and nvm are optional. Any version manager may be used as long as it selects
@@ -19,9 +21,8 @@ the versions above.
 make setup
 ```
 
-This installs Flutter packages from `pubspec.lock` and Function packages with
-`npm ci` from `functions/package-lock.json`. It requires registry access but no
-Firebase project or credentials.
+This installs the pinned Supabase CLI, Flutter packages from `pubspec.lock`,
+and legacy Function packages from their lockfile.
 
 ## Validate
 
@@ -38,6 +39,17 @@ Android toolchain.
 Individual commands are available through `make format-check`, `make lint`,
 `make typecheck`, and `make test`. Run `make format` to format Dart sources.
 
+Database checks require the local stack:
+
+```sh
+make local-start
+make db-reset
+make db-test
+```
+
+Supabase Studio is then available at `http://127.0.0.1:54323`. Stop the stack
+with `make local-stop`.
+
 ## Run locally
 
 Copy the safe example values before configuring integrations:
@@ -47,18 +59,18 @@ cp .env.example .env.local
 cp functions/.env.example functions/.env.local
 ```
 
-The Flutter command does not automatically read `.env.local`; pass its public
-Stripe value explicitly:
+Fill `SUPABASE_PUBLISHABLE_KEY` with the local value printed by
+`npx supabase status`, then run Flutter with the file:
 
 ```sh
-flutter run --dart-define=STRIPE_PK=pk_test_placeholder_replace_me
+flutter run --dart-define-from-file=.env.local
 ```
 
-The current application initializes Firebase at startup. Live authentication,
-data, messaging, payments, and Function testing therefore need Firebase and
-Stripe configuration described in [SETUP.md](SETUP.md). These services are not
-required for `make check` or compilation. Replacing Firebase with a locally
-provisioned backend is the planned next development task.
+For an Android emulator, change `SUPABASE_URL` in `.env.local` to
+`http://10.0.2.2:54321`. Email auth, profiles, tasks, and history use local
+Supabase. Google OAuth and Stripe still require their external test-mode
+configuration. [SETUP.md](SETUP.md) documents the legacy Firebase backend only
+while its payment Functions are migrated.
 
 ## Git workflow
 

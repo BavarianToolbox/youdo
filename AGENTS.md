@@ -3,8 +3,9 @@
 ## Repository overview
 
 You-Do is a Flutter mobile app. Application code is under `lib/`, tests under
-`test/`, and the current Firebase Functions TypeScript backend under
-`functions/src/`. Treat `functions/lib/` as generated output.
+`test/`, and the Supabase schema/tests under `supabase/`. The Firebase Functions
+under `functions/src/` are legacy payment code pending migration; treat
+`functions/lib/` as generated output.
 
 ## Setup
 
@@ -18,15 +19,17 @@ No secrets are needed for setup or the standard checks.
 
 ## Development
 
-Run the mobile app on an available simulator/device with:
+Start the local backend, copy `.env.example` to `.env.local`, fill the
+publishable key from `npx supabase status`, then run the app:
 
 ```sh
-flutter run --dart-define=STRIPE_PK=pk_test_placeholder_replace_me
+make local-start
+flutter run --dart-define-from-file=.env.local
 ```
 
-The current live application requires Firebase. See `SETUP.md` for optional
-hosted integration setup. Never commit `.env`, `.env.local`, Firebase project
-selection, signing material, or real Stripe/Firebase credentials.
+Use `http://10.0.2.2:54321` as `SUPABASE_URL` on an Android emulator. Never
+commit `.env`, `.env.local`, linked Supabase state, signing material, or real
+Stripe/OAuth credentials.
 
 ## Validation
 
@@ -34,6 +37,7 @@ selection, signing material, or real Stripe/Firebase credentials.
 make check          # format check, analysis/lint, typecheck, unit tests
 make build          # debug Android APK and Function JavaScript
 make format         # apply Dart formatting
+make db-test        # pgTAP tests; requires make local-start
 ```
 
 Run `make check` after code changes. Run `make build` when application,
@@ -46,12 +50,12 @@ dependency, platform, or Function changes can affect compilation.
 - Edit `functions/src/`, not generated `functions/lib/`; rebuild afterward.
 - Keep lockfiles committed and use `npm ci` for deterministic Function installs.
 - Do not introduce secrets, generated build output, or machine-specific paths.
-- Keep the client/backend boundary explicit during the planned Firebase
-  replacement so local and CI tests remain credential-free.
+- Add database changes as migrations and cover schema/RLS behavior with pgTAP.
+- Keep client/backend boundaries explicit so local and CI tests stay
+  credential-free.
 
 ## Environment limitations
 
-Remote agents can run `make check` without external services. `make build`
-needs an Android SDK and Java 17. Device/simulator runs, push notifications,
-Google sign-in, Stripe webhooks, and the hosted Firebase integration are not
-part of the credential-free CI path.
+Remote agents can run `make check` without external services. Database tests
+need a Docker-compatible engine. `make build` needs an Android SDK and Java 17.
+Google OAuth and Stripe webhooks still need external test-mode configuration.

@@ -1,9 +1,10 @@
-# You-Do — Setup Guide
+# You-Do — Legacy Firebase Setup Guide
 
 > This guide configures the application's current hosted Firebase and Stripe
 > integrations. It is optional for credential-free setup and validation; start
 > with `make setup` and `make check` from the repository root. Firebase is
-> scheduled to be replaced by a locally provisioned backend.
+> being replaced by the Supabase project in `supabase/`. Do not use this guide
+> for new local development.
 
 ## Prerequisites
 

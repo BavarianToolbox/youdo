@@ -1,16 +1,8 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../features/tasks/domain/task.dart';
 import '../core/utils/currency_formatter.dart';
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background message handling — Firebase handles display automatically
-  debugPrint('Background FCM message: ${message.messageId}');
-}
 
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
@@ -32,36 +24,21 @@ class NotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: androidSettings, iOS: iosSettings),
     );
-
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    FirebaseMessaging.onMessage.listen((message) {
-      final notification = message.notification;
-      if (notification != null) {
-        _showForegroundNotification(notification);
-      }
-    });
   }
 
   static Future<bool> requestPermissions() async {
-    final settings = await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
     final iosGranted = await _plugin
         .resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin
         >()
         ?.requestPermissions(alert: true, badge: true, sound: true);
+    final androidGranted = await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.requestNotificationsPermission();
 
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-        (iosGranted ?? false);
-  }
-
-  static Future<String?> getFcmToken() async {
-    return FirebaseMessaging.instance.getToken();
+    return (iosGranted ?? false) || (androidGranted ?? false);
   }
 
   static Future<void> scheduleTaskReminder(Task task) async {
@@ -100,15 +77,6 @@ class NotificationService {
 
   static Future<void> cancelAll() async {
     await _plugin.cancelAll();
-  }
-
-  static void _showForegroundNotification(RemoteNotification notification) {
-    _plugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      _notificationDetails(),
-    );
   }
 
   static NotificationDetails _notificationDetails() {
