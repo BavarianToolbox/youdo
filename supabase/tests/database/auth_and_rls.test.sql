@@ -153,47 +153,37 @@ select throws_ok(
       now() + interval '2 days'
     )
   $$,
+  '42501',
+  'new row violates row-level security policy for table "tasks"',
   'a user cannot create a task for another user'
 );
 
-select is(
-  (
-    with changed as (
-      update public.tasks
-      set title = 'Tampered'
-      where id = '20000000-0000-0000-0000-000000000022'
-      returning 1
-    )
-    select count(*) from changed
-  ),
-  0::bigint,
+select is_empty(
+  $$
+    update public.tasks
+    set title = 'Tampered'
+    where id = '20000000-0000-0000-0000-000000000022'
+    returning id
+  $$,
   'a user cannot update another user task'
 );
 
-select is(
-  (
-    with removed as (
-      delete from public.tasks
-      where id = '20000000-0000-0000-0000-000000000022'
-      returning 1
-    )
-    select count(*) from removed
-  ),
-  0::bigint,
+select is_empty(
+  $$
+    delete from public.tasks
+    where id = '20000000-0000-0000-0000-000000000022'
+    returning id
+  $$,
   'a user cannot delete another user task'
 );
 
-select is(
-  (
-    with changed as (
-      update public.profiles
-      set display_name = 'Tampered'
-      where id = '20000000-0000-0000-0000-000000000002'
-      returning 1
-    )
-    select count(*) from changed
-  ),
-  0::bigint,
+select is_empty(
+  $$
+    update public.profiles
+    set display_name = 'Tampered'
+    where id = '20000000-0000-0000-0000-000000000002'
+    returning id
+  $$,
   'a user cannot update another user profile'
 );
 
