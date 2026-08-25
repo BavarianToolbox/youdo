@@ -2,13 +2,14 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(17);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'tasks', 'tasks table exists');
 select has_table('public', 'transactions', 'transactions table exists');
 
 select has_column('public', 'profiles', 'id', 'profiles has an id');
+select has_column('public', 'profiles', 'yd_balance', 'profiles track reward credit');
 select has_column('public', 'tasks', 'user_id', 'tasks belong to a user');
 select has_column('public', 'tasks', 'due_date', 'tasks have a deadline');
 select has_column('public', 'transactions', 'task_id', 'transactions reference tasks');

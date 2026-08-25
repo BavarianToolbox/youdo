@@ -11,6 +11,7 @@ void main() {
       'email': 'dev@example.com',
       'display_name': 'Dev User',
       'onboarding_complete': true,
+      'yd_balance': 7.25,
       'total_earned': 12.50,
       'total_lost': 3,
     });
@@ -18,6 +19,7 @@ void main() {
     expect(user.uid, 'user-id');
     expect(user.displayName, 'Dev User');
     expect(user.onboardingComplete, isTrue);
+    expect(user.ydBalance, 7.25);
     expect(user.totalEarned, 12.50);
     expect(user.totalLost, 3.0);
   });

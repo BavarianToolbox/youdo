@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../auth/data/auth_repository.dart';
 import '../domain/task.dart';
-import '../domain/task_status.dart';
 
 class TasksRepository {
   TasksRepository(this._client);
@@ -29,29 +28,33 @@ class TasksRepository {
   }
 
   Future<String> createTask(Task task) async {
-    await _client.from('tasks').insert(task.toJson());
+    await _client.from('tasks').insert({
+      'id': task.id,
+      'user_id': task.userId,
+      'title': task.title,
+      'description': task.description,
+      'due_date': task.dueDate.toUtc().toIso8601String(),
+      'reward_amount': task.rewardAmount,
+      'penalty_amount': task.penaltyAmount,
+    });
     return task.id;
   }
 
   Future<void> updateTask(Task task) async {
-    await _client.from('tasks').update(task.toJson()).eq('id', task.id);
+    await _client
+        .from('tasks')
+        .update({
+          'title': task.title,
+          'description': task.description,
+          'due_date': task.dueDate.toUtc().toIso8601String(),
+          'reward_amount': task.rewardAmount,
+          'penalty_amount': task.penaltyAmount,
+        })
+        .eq('id', task.id);
   }
 
   Future<void> deleteTask(String taskId) async {
     await _client.from('tasks').delete().eq('id', taskId);
-  }
-
-  Future<void> markComplete(String taskId, {required bool isOnTime}) async {
-    final status = isOnTime
-        ? TaskStatus.completedOnTime
-        : TaskStatus.completedLate;
-    await _client
-        .from('tasks')
-        .update({
-          'status': status.databaseValue,
-          'completed_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', taskId);
   }
 
   Future<void> updateNotificationScheduled(String taskId) async {

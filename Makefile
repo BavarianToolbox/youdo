@@ -1,4 +1,4 @@
-.PHONY: setup local-start local-stop db-reset db-test format format-check lint typecheck test check flutter-build functions-build build
+.PHONY: setup local-start local-stop db-reset db-test edge-format-check edge-lint edge-typecheck edge-test edge-check format format-check lint typecheck test check flutter-build functions-build build
 
 setup:
 	npm ci
@@ -17,6 +17,20 @@ db-reset:
 db-test:
 	npx supabase test db
 
+edge-format-check:
+	deno fmt --check supabase/functions
+
+edge-lint:
+	deno lint --config supabase/functions/deno.json supabase/functions
+
+edge-typecheck:
+	deno check --config supabase/functions/deno.json supabase/functions/*/index.ts
+
+edge-test:
+	deno test --config supabase/functions/deno.json supabase/functions/tests
+
+edge-check: edge-format-check edge-lint edge-typecheck edge-test
+
 format:
 	dart format lib test
 
@@ -33,7 +47,7 @@ typecheck:
 test:
 	flutter test
 
-check: format-check lint typecheck test
+check: format-check lint typecheck test edge-check
 
 flutter-build:
 	flutter build apk --debug --dart-define=STRIPE_PK=pk_test_placeholder_replace_me

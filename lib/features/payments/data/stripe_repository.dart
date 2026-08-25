@@ -33,11 +33,10 @@ class StripeRepository {
 
   Future<Map<String, dynamic>> processTaskCompletion({
     required String taskId,
-    required bool isOnTime,
   }) async {
     final result = await _client.functions.invoke(
       'process-task-completion',
-      body: {'taskId': taskId, 'isOnTime': isOnTime},
+      body: {'taskId': taskId},
     );
     return Map<String, dynamic>.from(result.data as Map);
   }

@@ -10,9 +10,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/yd_button.dart';
 import '../../../services/audio_service.dart';
 import '../../../services/haptics_service.dart';
-import '../../auth/data/auth_repository.dart';
 import '../../payments/data/stripe_repository.dart';
-import '../../tasks/data/tasks_repository.dart';
 import '../../tasks/domain/task.dart';
 
 class CompletionScreen extends ConsumerStatefulWidget {
@@ -36,12 +34,14 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
   late final Animation<double> _scaleAnimation;
 
   bool _isProcessing = true;
+  late bool _isOnTime;
   String? _resultMessage;
   bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
+    _isOnTime = widget.isOnTime;
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 4),
     );
@@ -58,33 +58,31 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
 
   Future<void> _processCompletion() async {
     try {
-      // Persist completion before processing any configured stake.
-      await ref
-          .read(tasksRepositoryProvider)
-          .markComplete(widget.task.id, isOnTime: widget.isOnTime);
-
-      // Process payment if stakes are configured and user has a payment method
-      final user = ref.read(currentUserProvider).valueOrNull;
-      if (user?.hasPaymentMethod == true && widget.task.hasStake) {
+      // The backend assigns completion time/status and processes any stake.
+      if (widget.task.hasStake) {
         try {
           final result = await ref
               .read(stripeRepositoryProvider)
-              .processTaskCompletion(
-                taskId: widget.task.id,
-                isOnTime: widget.isOnTime,
-              );
+              .processTaskCompletion(taskId: widget.task.id);
           _resultMessage = result['message'] as String?;
+          _isOnTime = result['isOnTime'] as bool? ?? _isOnTime;
         } catch (_) {
           // Payment error — task is still marked complete, show soft error
           _resultMessage = 'Payment processing — check history for details';
         }
+      } else {
+        final result = await ref
+            .read(stripeRepositoryProvider)
+            .processTaskCompletion(taskId: widget.task.id);
+        _resultMessage = result['message'] as String?;
+        _isOnTime = result['isOnTime'] as bool? ?? _isOnTime;
       }
 
       if (mounted) {
         setState(() => _isProcessing = false);
         _scaleController.forward();
 
-        if (widget.isOnTime) {
+        if (_isOnTime) {
           _confettiController.play();
           await ref.read(hapticsServiceProvider).successPattern();
           await ref.read(audioServiceProvider).playSuccess();
@@ -118,7 +116,7 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
           : AppColors.background,
       body: Stack(
         children: [
-          if (widget.isOnTime)
+          if (_isOnTime)
             Align(
               alignment: Alignment.topCenter,
               child: ConfettiWidget(
@@ -156,7 +154,7 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
                     scale: _scaleAnimation,
                     child: _ResultBody(
                       task: widget.task,
-                      isOnTime: widget.isOnTime,
+                      isOnTime: _isOnTime,
                       message: _resultMessage,
                       onDone: () => context.go('/tasks'),
                     ),
