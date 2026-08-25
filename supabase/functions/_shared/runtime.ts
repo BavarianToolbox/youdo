@@ -11,10 +11,24 @@ import {
   TransactionRecord,
 } from "./payment_service.ts";
 
-function requiredEnv(name: string): string {
+export function requiredEnv(name: string): string {
   const value = Deno.env.get(name);
   if (value == null || value.length === 0) throw new Error(`${name} is required`);
   return value;
+}
+
+export function createAdminClient(): SupabaseClient {
+  return createClient(
+    requiredEnv("SUPABASE_URL"),
+    requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
+
+export function createStripeClient(): Stripe {
+  return new Stripe(requiredEnv("STRIPE_SECRET_KEY"), {
+    apiVersion: "2024-06-20",
+  });
 }
 
 class SupabaseAuthenticator implements Authenticator {
@@ -127,7 +141,7 @@ class SupabasePaymentStore implements PaymentStore {
   }
 }
 
-class StripeSdkGateway implements StripeGateway {
+export class StripeSdkGateway implements StripeGateway {
   constructor(private readonly stripe: Stripe) {}
 
   async createCustomer(userId: string, email: string, displayName: string): Promise<string> {
@@ -181,14 +195,8 @@ export function createRuntime(): {
   authenticator: Authenticator;
   service: PaymentService;
 } {
-  const admin = createClient(
-    requiredEnv("SUPABASE_URL"),
-    requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-  const stripe = new Stripe(requiredEnv("STRIPE_SECRET_KEY"), {
-    apiVersion: "2024-06-20",
-  });
+  const admin = createAdminClient();
+  const stripe = createStripeClient();
   return {
     authenticator: new SupabaseAuthenticator(admin),
     service: new PaymentService(

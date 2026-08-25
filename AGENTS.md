@@ -3,9 +3,8 @@
 ## Repository overview
 
 You-Do is a Flutter mobile app. Application code is under `lib/`, tests under
-`test/`, and the Supabase schema/tests under `supabase/`. The Firebase Functions
-under `functions/src/` are legacy payment code pending migration; treat
-`functions/lib/` as generated output.
+`test/`, and the Supabase schema, Edge Functions, and database tests under
+`supabase/`.
 
 ## Setup
 
@@ -35,7 +34,7 @@ Stripe/OAuth credentials.
 
 ```sh
 make check          # format check, analysis/lint, typecheck, unit tests
-make build          # debug Android APK and Function JavaScript
+make build          # debug Android APK and Edge Function type check
 make format         # apply Dart formatting
 make db-test        # pgTAP tests; requires make local-start
 make edge-check     # format, lint, type-check, and unit-test Edge Functions
@@ -48,8 +47,7 @@ dependency, platform, or Function changes can affect compilation.
 
 - Preserve the feature/data/domain/presentation structure already in `lib/`.
 - Add or update self-contained tests for behavior changes.
-- Edit `functions/src/`, not generated `functions/lib/`; rebuild afterward.
-- Keep lockfiles committed and use `npm ci` for deterministic Function installs.
+- Keep the Deno and npm lockfiles committed for deterministic installs.
 - Do not introduce secrets, generated build output, or machine-specific paths.
 - Add database changes as migrations and cover schema/RLS behavior with pgTAP.
 - Keep client/backend boundaries explicit so local and CI tests stay

@@ -1,155 +1,81 @@
-# You-Do — Legacy Firebase Setup Guide
+# Supabase and Stripe Setup
 
-> This guide configures the application's current hosted Firebase and Stripe
-> integrations. It is optional for credential-free setup and validation; start
-> with `make setup` and `make check` from the repository root. Firebase is
-> being replaced by the Supabase project in `supabase/`. Do not use this guide
-> for new local development.
+The credential-free development path is documented in [README.md](README.md).
+This guide covers the external configuration required to exercise Stripe in
+test mode or deploy the backend to a hosted Supabase project.
 
-## Prerequisites
+## Local Stripe testing
 
-- Flutter SDK 3.38.5 / Dart 3.10.4 (`flutter --version`)
-- Node.js 20 and npm
-- Firebase CLI: `npm install -g firebase-tools`
-- FlutterFire CLI: `dart pub global activate flutterfire_cli`
-- A Firebase project (free Blaze plan required for Cloud Functions)
-- A Stripe account (free; use test mode)
+1. Copy `supabase/.env.example` to `supabase/.env.local`.
+2. Put a Stripe **test-mode** secret key in `STRIPE_SECRET_KEY`.
+3. Start Supabase and serve the functions:
 
----
-
-## Step 1: Firebase Project
-
-1. Go to https://console.firebase.google.com and create a project
-2. Enable these services:
-   - Authentication → Sign-in providers: **Email/Password** and **Google**
-   - Firestore Database → Create in production mode, pick a region
-   - Cloud Functions (requires Blaze billing plan)
-   - Cloud Messaging (automatic)
-3. In Authentication → Settings → Authorized domains, your app's domain is already there
-
----
-
-## Step 2: Connect Flutter to Firebase
-
-```bash
-# From repo root
-flutterfire configure
+```sh
+make local-start
+npx supabase functions serve --env-file supabase/.env.local
 ```
 
-Follow the prompts to select your Firebase project. This generates `lib/firebase_options.dart` with real values (replacing the placeholder file).
+In another terminal, forward Stripe test events to the local webhook:
 
-### iOS additional step
-In Xcode, set the deployment target to 14.0:
-- Open `ios/Runner.xcworkspace`
-- Select Runner target → General → Minimum Deployments → 14.0
-
-### Android Google Sign-In setup
-```bash
-# Get SHA-1 fingerprint
-cd android && ./gradlew signingReport | grep SHA1
-```
-Add the SHA-1 to Firebase Console → Project Settings → Your Android app → Add fingerprint.
-
----
-
-## Step 3: Stripe
-
-1. Create account at https://stripe.com (free)
-2. Switch to **Test mode** (toggle in dashboard top-right)
-3. Go to Developers → API Keys:
-   - Copy **Publishable key** (`pk_test_...`)
-   - Copy **Secret key** (`sk_test_...`) — keep this safe, never commit it
-
----
-
-## Step 4: Cloud Functions Environment
-
-```bash
-cd functions
-npm install
-
-# Set Stripe secret key in Firebase config
-firebase functions:config:set stripe.secret="sk_test_YOUR_SECRET_KEY"
-
-# Build TypeScript
-npm run build
+```sh
+stripe listen \
+  --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook
 ```
 
----
+Copy the displayed `whsec_...` value into `STRIPE_WEBHOOK_SECRET`, restart the
+function server, and run the Flutter application with a Stripe test-mode
+publishable key. Never commit either Stripe secret.
 
-## Step 5: Deploy Firestore Rules & Indexes
+## Hosted Supabase deployment
 
-```bash
-# From repo root
-firebase login   # if not already logged in
-firebase use --add   # select your project
+Link the repository to a non-production Supabase project first:
 
-firebase deploy --only firestore:rules,firestore:indexes
+```sh
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+npx supabase secrets set \
+  STRIPE_SECRET_KEY=sk_test_YOUR_KEY \
+  STRIPE_WEBHOOK_SECRET=whsec_YOUR_SECRET
+npx supabase functions deploy
 ```
 
----
+Register this Stripe webhook endpoint:
 
-## Step 6: Deploy Cloud Functions
-
-```bash
-firebase deploy --only functions
+```text
+https://YOUR_PROJECT_REF.supabase.co/functions/v1/stripe-webhook
 ```
 
-After deployment, note the `stripeWebhook` function URL (shown in output or Firebase Console → Functions).
+Subscribe it to:
 
-### Register Stripe Webhook
-1. Go to Stripe Dashboard → Developers → Webhooks → Add endpoint
-2. URL: `https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/stripeWebhook`
-3. Events to listen for: `payment_intent.succeeded`, `payment_intent.payment_failed`
-4. Copy the **Signing secret** (`whsec_...`)
-5. `firebase functions:config:set stripe.webhook_secret="whsec_YOUR_SECRET"`
-6. Redeploy: `firebase deploy --only functions`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
 
----
+The webhook does not accept Supabase JWTs. It verifies Stripe's signature over
+the unmodified request body before applying an event.
 
-## Step 7: Run the App
+## Schedule deadline processing
 
-```bash
-# Run on iOS simulator
-flutter run --dart-define=STRIPE_PK=pk_test_YOUR_PUBLISHABLE_KEY
+The `process-deadlines` function must run every 15 minutes. In the Supabase
+Dashboard, create a Cron job that invokes this Edge Function with the project's
+secret key in the `apikey` header. Store the project URL and secret key in
+Supabase Vault; do not embed either value directly in migration SQL.
 
-# Run on Android emulator
-flutter run -d android --dart-define=STRIPE_PK=pk_test_YOUR_PUBLISHABLE_KEY
+The equivalent schedule is:
+
+```text
+*/15 * * * *
 ```
 
----
+The function atomically claims overdue tasks before charging them. Repeated or
+concurrent invocations cannot claim the same task, and Stripe charges use the
+task ID as their idempotency key.
 
-## Testing Stripe Payments
+## What remains external
 
-Use these test card numbers (any future expiry, any CVC):
+- Stripe test/live credentials and webhook registration
+- Hosted Supabase project creation and function deployment
+- Supabase Cron/Vault configuration
+- Google OAuth provider credentials and redirect configuration
 
-| Card number | Scenario |
-|---|---|
-| `4242 4242 4242 4242` | Success |
-| `4000 0000 0000 9995` | Insufficient funds |
-| `4000 0000 0000 3220` | 3D Secure required |
-
----
-
-## Testing the Deadline Checker
-
-The `checkDeadlines` Cloud Function runs every 15 minutes. To test immediately:
-
-1. Create a task with a due date in the past
-2. Invoke the function manually from Firebase Console → Functions → checkDeadlines → Test
-
-Or use the Firebase Emulator Suite:
-```bash
-firebase emulators:start --only functions,firestore
-```
-
----
-
-## Phase 2 Roadmap
-
-- [ ] Social media linking (X/Twitter, Instagram, TikTok) via OAuth
-- [ ] Automated "accountability post" on task failure
-- [ ] Political donation as penalty destination
-- [ ] Stripe Connect for real user reward payouts
-- [ ] Task streaks and gamification
-- [ ] Shared/collaborative tasks
+None of these are required for `make check`, `make build`, or database tests.

@@ -2,11 +2,12 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(18);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'tasks', 'tasks table exists');
 select has_table('public', 'transactions', 'transactions table exists');
+select has_table('public', 'stripe_webhook_events', 'webhook event ledger exists');
 
 select has_column('public', 'profiles', 'id', 'profiles has an id');
 select has_column('public', 'profiles', 'yd_balance', 'profiles track reward credit');

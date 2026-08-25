@@ -37,18 +37,8 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Node/Firebase Functions
+# Node dependencies
 node_modules/
-functions/node_modules/
-functions/lib/
-functions/.firebase/
-functions/.env.local
-
-# Firebase CLI local state and logs
-.firebase/
-.firebaserc
-firebase-debug.log
-firebase-debug.*.log
 
 # Supabase local runtime state
 supabase/.branches/
