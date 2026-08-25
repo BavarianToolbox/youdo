@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(15);
+select plan(17);
 
 -- Inserting through auth.users exercises the same profile trigger used by
 -- Supabase Auth. Fixed UUIDs make failures readable; the transaction rolls back.
@@ -194,6 +194,28 @@ select lives_ok(
     where id = '10000000-0000-0000-0000-000000000001'
   $$,
   'a user can update their own profile'
+);
+
+select throws_ok(
+  $$
+    update public.profiles
+    set total_earned = 999
+    where id = '10000000-0000-0000-0000-000000000001'
+  $$,
+  '42501',
+  'permission denied for table profiles',
+  'a user cannot update server-managed financial totals'
+);
+
+select throws_ok(
+  $$
+    update public.tasks
+    set status = 'completed_on_time'
+    where id = '10000000-0000-0000-0000-000000000011'
+  $$,
+  '42501',
+  'permission denied for table tasks',
+  'a user cannot assign a completion status'
 );
 
 reset role;

@@ -12,6 +12,7 @@ class AppUser extends Equatable {
     this.notificationsEnabled = true,
     this.soundEnabled = true,
     this.hapticsEnabled = true,
+    this.ydBalance = 0.0,
     this.totalEarned = 0.0,
     this.totalLost = 0.0,
   });
@@ -26,6 +27,7 @@ class AppUser extends Equatable {
   final bool notificationsEnabled;
   final bool soundEnabled;
   final bool hapticsEnabled;
+  final double ydBalance;
   final double totalEarned;
   final double totalLost;
 
@@ -41,6 +43,7 @@ class AppUser extends Equatable {
       notificationsEnabled: data['notifications_enabled'] as bool? ?? true,
       soundEnabled: data['sound_enabled'] as bool? ?? true,
       hapticsEnabled: data['haptics_enabled'] as bool? ?? true,
+      ydBalance: (data['yd_balance'] as num?)?.toDouble() ?? 0.0,
       totalEarned: (data['total_earned'] as num?)?.toDouble() ?? 0.0,
       totalLost: (data['total_lost'] as num?)?.toDouble() ?? 0.0,
     );
@@ -55,6 +58,7 @@ class AppUser extends Equatable {
       'notifications_enabled': notificationsEnabled,
       'sound_enabled': soundEnabled,
       'haptics_enabled': hapticsEnabled,
+      'yd_balance': ydBalance,
       'total_earned': totalEarned,
       'total_lost': totalLost,
     };
@@ -69,6 +73,7 @@ class AppUser extends Equatable {
     bool? notificationsEnabled,
     bool? soundEnabled,
     bool? hapticsEnabled,
+    double? ydBalance,
     double? totalEarned,
     double? totalLost,
   }) {
@@ -84,6 +89,7 @@ class AppUser extends Equatable {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+      ydBalance: ydBalance ?? this.ydBalance,
       totalEarned: totalEarned ?? this.totalEarned,
       totalLost: totalLost ?? this.totalLost,
     );

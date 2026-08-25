@@ -29,6 +29,10 @@ jobs:
             package-lock.json
             functions/package-lock.json
 
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - run: make setup
       - run: make check
 

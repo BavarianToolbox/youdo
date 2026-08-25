@@ -38,6 +38,7 @@ make check          # format check, analysis/lint, typecheck, unit tests
 make build          # debug Android APK and Function JavaScript
 make format         # apply Dart formatting
 make db-test        # pgTAP tests; requires make local-start
+make edge-check     # format, lint, type-check, and unit-test Edge Functions
 ```
 
 Run `make check` after code changes. Run `make build` when application,
@@ -59,3 +60,5 @@ dependency, platform, or Function changes can affect compilation.
 Remote agents can run `make check` without external services. Database tests
 need a Docker-compatible engine. `make build` needs an Android SDK and Java 17.
 Google OAuth and Stripe webhooks still need external test-mode configuration.
+Credential-free Edge Function unit tests use injected payment/database fakes;
+live Stripe behavior must use Stripe test mode.
