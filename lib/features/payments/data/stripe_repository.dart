@@ -1,44 +1,102 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../auth/data/auth_repository.dart';
 
-class StripeRepository {
-  StripeRepository(this._client);
+abstract interface class PaymentFunctionsGateway {
+  Future<Object?> invoke(String functionName, {Map<String, dynamic>? body});
+}
+
+class SupabasePaymentFunctionsGateway implements PaymentFunctionsGateway {
+  SupabasePaymentFunctionsGateway(this._client);
 
   final SupabaseClient _client;
 
+  @override
+  Future<Object?> invoke(
+    String functionName, {
+    Map<String, dynamic>? body,
+  }) async {
+    final response = await _client.functions.invoke(functionName, body: body);
+    return response.data;
+  }
+}
+
+class PaymentResponseException implements Exception {
+  const PaymentResponseException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'PaymentResponseException: $message';
+}
+
+class TaskCompletionResult {
+  const TaskCompletionResult({required this.message, required this.isOnTime});
+
+  final String message;
+  final bool isOnTime;
+}
+
+class StripeRepository {
+  StripeRepository(SupabaseClient client)
+    : this.gateway(SupabasePaymentFunctionsGateway(client));
+
+  StripeRepository.gateway(this._gateway);
+
+  final PaymentFunctionsGateway _gateway;
+
   Future<String> createSetupIntent() async {
-    final result = await _client.functions.invoke('create-setup-intent');
-    return (result.data as Map<String, dynamic>)['clientSecret'] as String;
+    final data = _asMap(await _gateway.invoke('create-setup-intent'));
+    final clientSecret = data['clientSecret'];
+    if (clientSecret is! String || clientSecret.isEmpty) {
+      throw const PaymentResponseException(
+        'create-setup-intent did not return a clientSecret',
+      );
+    }
+    return clientSecret;
   }
 
-  Future<void> confirmSetupIntent(String clientSecret) async {
-    await Stripe.instance.confirmSetupIntent(
-      paymentIntentClientSecret: clientSecret,
-      params: const PaymentMethodParams.card(
-        paymentMethodData: PaymentMethodData(),
+  Future<void> savePaymentMethod(String paymentMethodId) async {
+    final data = _asMap(
+      await _gateway.invoke(
+        'save-payment-method',
+        body: {'paymentMethodId': paymentMethodId},
       ),
     );
+    if (data['success'] != true) {
+      throw const PaymentResponseException(
+        'save-payment-method did not report success',
+      );
+    }
   }
 
-  Future<Map<String, dynamic>> savePaymentMethod(String paymentMethodId) async {
-    final result = await _client.functions.invoke(
-      'save-payment-method',
-      body: {'paymentMethodId': paymentMethodId},
-    );
-    return Map<String, dynamic>.from(result.data as Map);
-  }
-
-  Future<Map<String, dynamic>> processTaskCompletion({
+  Future<TaskCompletionResult> processTaskCompletion({
     required String taskId,
   }) async {
-    final result = await _client.functions.invoke(
-      'process-task-completion',
-      body: {'taskId': taskId},
+    final data = _asMap(
+      await _gateway.invoke(
+        'process-task-completion',
+        body: {'taskId': taskId},
+      ),
     );
-    return Map<String, dynamic>.from(result.data as Map);
+    final message = data['message'];
+    final isOnTime = data['isOnTime'];
+    if (message is! String || isOnTime is! bool) {
+      throw const PaymentResponseException(
+        'process-task-completion returned an invalid response',
+      );
+    }
+    return TaskCompletionResult(message: message, isOnTime: isOnTime);
+  }
+
+  Map<String, dynamic> _asMap(Object? data) {
+    if (data is! Map) {
+      throw const PaymentResponseException(
+        'Backend returned a non-map response',
+      );
+    }
+    return Map<String, dynamic>.from(data);
   }
 }
 
