@@ -1,9 +1,8 @@
-.PHONY: setup local-start local-stop db-reset db-test edge-format-check edge-lint edge-typecheck edge-test edge-check format format-check lint typecheck test check flutter-build functions-build build
+.PHONY: setup local-start local-stop db-reset db-test edge-format-check edge-lint edge-typecheck edge-test edge-check format format-check lint typecheck test check flutter-build build
 
 setup:
 	npm ci
 	flutter pub get
-	npm --prefix functions ci
 
 local-start:
 	npx supabase start
@@ -39,20 +38,15 @@ format-check:
 
 lint:
 	flutter analyze --no-fatal-infos
-	npm --prefix functions run lint
 
-typecheck:
-	npm --prefix functions run typecheck
+typecheck: edge-typecheck
 
 test:
 	flutter test
 
-check: format-check lint typecheck test edge-check
+check: format-check lint test edge-check
 
 flutter-build:
 	flutter build apk --debug --dart-define=STRIPE_PK=pk_test_placeholder_replace_me
 
-functions-build:
-	npm --prefix functions run build
-
-build: flutter-build functions-build
+build: flutter-build edge-typecheck

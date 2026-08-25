@@ -2,8 +2,7 @@
 
 You-Do is a Flutter mobile application for financially incentivized task
 management. The Flutter client is in `lib/`; the local Supabase project,
-PostgreSQL migrations, and database tests are in `supabase/`. The Firebase
-Cloud Functions in `functions/` are legacy code being replaced.
+PostgreSQL migrations, Edge Functions, and database tests are in `supabase/`.
 
 ## Prerequisites
 
@@ -22,8 +21,7 @@ the versions above.
 make setup
 ```
 
-This installs the pinned Supabase CLI, Flutter packages from `pubspec.lock`,
-and legacy Function packages from their lockfile.
+This installs the pinned Supabase CLI and Flutter packages from `pubspec.lock`.
 
 ## Validate
 
@@ -32,10 +30,10 @@ make check
 make build
 ```
 
-`make check` runs formatting checks, Flutter analysis, Function lint and type
-checking, and credential-free unit tests. `make build` compiles a debug Android
-APK and the Function TypeScript. The Android build also requires an installed
-Android toolchain.
+`make check` runs formatting checks, Flutter analysis, Edge Function lint and
+type checking, and credential-free unit tests. `make build` compiles a debug
+Android APK and type-checks the Edge Functions. The Android build also requires
+an installed Android toolchain.
 
 Individual commands are available through `make format-check`, `make lint`,
 `make typecheck`, and `make test`. Run `make format` to format Dart sources.
@@ -73,9 +71,10 @@ Supabase. Google OAuth and Stripe still require their external test-mode
 configuration. To exercise payment functions, set a Stripe test secret in
 `supabase/.env.local`, then run `npx supabase functions serve --env-file
 supabase/.env.local`. The client invokes `create-setup-intent`,
-`save-payment-method`, and `process-task-completion` from that local runtime.
-[SETUP.md](SETUP.md) documents the remaining legacy Firebase webhook and
-scheduled jobs only while those are migrated.
+`save-payment-method`, and `process-task-completion`. Stripe calls
+`stripe-webhook`, while Supabase Cron calls `process-deadlines`.
+[SETUP.md](SETUP.md) documents webhook forwarding, hosted deployment, and the
+15-minute Cron job.
 
 ## Git workflow
 
