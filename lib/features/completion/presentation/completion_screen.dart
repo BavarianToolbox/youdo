@@ -59,24 +59,12 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
   Future<void> _processCompletion() async {
     try {
       // The backend assigns completion time/status and processes any stake.
-      if (widget.task.hasStake) {
-        try {
-          final result = await ref
-              .read(stripeRepositoryProvider)
-              .processTaskCompletion(taskId: widget.task.id);
-          _resultMessage = result['message'] as String?;
-          _isOnTime = result['isOnTime'] as bool? ?? _isOnTime;
-        } catch (_) {
-          // Payment error — task is still marked complete, show soft error
-          _resultMessage = 'Payment processing — check history for details';
-        }
-      } else {
-        final result = await ref
-            .read(stripeRepositoryProvider)
-            .processTaskCompletion(taskId: widget.task.id);
-        _resultMessage = result['message'] as String?;
-        _isOnTime = result['isOnTime'] as bool? ?? _isOnTime;
-      }
+      // A thrown or malformed response cannot prove completion was recorded.
+      final result = await ref
+          .read(stripeRepositoryProvider)
+          .processTaskCompletion(taskId: widget.task.id);
+      _resultMessage = result.message;
+      _isOnTime = result.isOnTime;
 
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -101,6 +89,14 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
     }
   }
 
+  void _retryCompletion() {
+    setState(() {
+      _isProcessing = true;
+      _hasError = false;
+    });
+    _processCompletion();
+  }
+
   @override
   void dispose() {
     _confettiController.dispose();
@@ -111,9 +107,7 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: widget.isOnTime
-          ? AppColors.primary
-          : AppColors.background,
+      backgroundColor: _isOnTime ? AppColors.primary : AppColors.background,
       body: Stack(
         children: [
           if (_isOnTime)
@@ -149,7 +143,10 @@ class _CompletionScreenState extends ConsumerState<CompletionScreen>
                     ),
                   )
                 : _hasError
-                ? _ErrorBody(onDismiss: () => context.go('/tasks'))
+                ? _ErrorBody(
+                    onRetry: _retryCompletion,
+                    onDismiss: () => context.go('/tasks'),
+                  )
                 : ScaleTransition(
                     scale: _scaleAnimation,
                     child: _ResultBody(
@@ -320,8 +317,9 @@ class _StakeResult extends StatelessWidget {
 }
 
 class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.onDismiss});
+  const _ErrorBody({required this.onRetry, required this.onDismiss});
 
+  final VoidCallback onRetry;
   final VoidCallback onDismiss;
 
   @override
@@ -342,8 +340,14 @@ class _ErrorBody extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          const Gap(AppSizes.xl),
-          YdButton(label: 'Go Back', onPressed: onDismiss),
+          const Gap(AppSizes.md),
+          YdButton(label: 'Try Again', onPressed: onRetry),
+          const Gap(AppSizes.sm),
+          YdButton(
+            label: 'Go Back',
+            onPressed: onDismiss,
+            variant: YdButtonVariant.ghost,
+          ),
         ],
       ),
     );
