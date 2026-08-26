@@ -73,11 +73,12 @@ configuration. To exercise payment functions, set a Stripe test secret in
 supabase/.env.local`. The client invokes `create-setup-intent`,
 `save-payment-method`, and `process-task-completion`. Stripe calls
 `stripe-webhook`, while Supabase Cron calls `process-deadlines`.
-[SETUP.md](SETUP.md) documents webhook forwarding, hosted deployment, and the
-15-minute Cron job.
+[SETUP.md](SETUP.md) documents webhook forwarding, the guarded manual staging
+deployment workflow, and the 15-minute Cron job.
 
 ## Git workflow
 
 Use one branch per local or remote-agent task. Push or checkpoint work before
 handing it to another environment, and merge through a pull request after CI
-passes. No production deployment is performed by this repository's CI.
+passes. CI never deploys the application. Staging deployment is a separate,
+manually confirmed workflow protected by the GitHub `staging` environment.
